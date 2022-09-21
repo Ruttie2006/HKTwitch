@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using HollowTwitch.Clients;
@@ -23,9 +24,9 @@ namespace HollowTwitch
         
         private Thread _currentThread;
 
-        internal Config Config = new();
+        public Config Config = new();
 
-        internal CommandProcessor Processor { get; private set; }
+        public CommandProcessor Processor { get; private set; }
 
         public static TwitchMod Instance;
         
@@ -165,7 +166,9 @@ namespace HollowTwitch
                 sb.AppendLine($"Summary:\n{(summary?.Summary ?? "No summary provided.")}\n");
             }
 
-            File.WriteAllText(Application.dataPath + "/Managed/Mods/TwitchCommandList.txt", sb.ToString());
+            var path = new FileInfo(Assembly.GetExecutingAssembly().Location);
+
+            File.WriteAllText(Path.Combine(path.Directory!.FullName, "CommandList.txt"), sb.ToString());
         }
 
         public void Unload() => OnQuit();

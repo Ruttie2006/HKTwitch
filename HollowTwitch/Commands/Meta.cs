@@ -11,6 +11,15 @@ namespace HollowTwitch.Commands
     public class Meta : CommandBase
     {
         [OwnerOnly]
+        [HKCommand("echo")]
+        [Summary("Echoes a message.")]
+        public void Echo([RemainingText] string msg)
+        {
+            Logger.Log($"Sending message \'{msg}\'.");
+            SendMessage(msg);
+        }
+
+        [OwnerOnly]
         [HKCommand("blacklist")]
         [Summary("Disable a command's usage.")]
         public void Blacklist(string command)
