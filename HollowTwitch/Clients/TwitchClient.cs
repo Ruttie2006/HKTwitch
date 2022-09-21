@@ -6,15 +6,15 @@ using System.Threading;
 
 namespace HollowTwitch.Clients
 {
-    internal class TwitchClient : IClient
+    public class TwitchClient : IClient
     {
         private TcpClient _client;
-        private StreamReader _output;
-        private StreamWriter _input;
+        internal StreamReader _output;
+        internal StreamWriter _input;
 
-        private readonly Config _config;
+        internal readonly Config _config;
 
-        public event Action<string, string> ChatMessageReceived;
+        public event Action<bool, string, string> ChatMessageReceived;
         public event Action<string> RawPayload;
 
         public event Action<string> ClientErrored;
@@ -70,7 +70,7 @@ namespace HollowTwitch.Clients
                 string user = message.Substring(1, message.IndexOf("!") - 1);
                 string cleaned = message.Split(':').Last();
                 
-                ChatMessageReceived?.Invoke(user, cleaned);
+                ChatMessageReceived?.Invoke(true, user, cleaned);
             }
         }
 

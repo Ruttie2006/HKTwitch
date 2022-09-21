@@ -3,8 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using HollowTwitch.Clients;
 using HollowTwitch.Entities;
 using HollowTwitch.Entities.Attributes;
 using HollowTwitch.Precondition;
@@ -118,6 +120,85 @@ namespace HollowTwitch
             }
         }
 
+
+        public void ExecuteTwitch(TwitchClient client, string user, string command, ReadOnlyCollection<string> blacklist, bool ignoreChecks = false)
+        {
+            string[] pieces = command.Split(Seperator);
+
+            IOrderedEnumerable<Command> found = Commands
+                                                .Where(x => x.Name.Equals(pieces[0], StringComparison.InvariantCultureIgnoreCase))
+                                                .OrderByDescending(x => x.Priority);
+
+            foreach (Command c in found)
+            {
+                bool allGood = !blacklist.Contains(c.Name, StringComparer.OrdinalIgnoreCase);
+
+                foreach (PreconditionAttribute p in c.Preconditions)
+                {
+                    if (p.Check(user)) continue;
+
+                    allGood = false;
+
+                    if (c.Preconditions.FirstOrDefault() is CooldownAttribute cooldown)
+                    {
+                        Logger.Log
+                        (
+                            $"The coodown for command {c.Name} failed. "
+                            + $"The cooldown has {cooldown.MaxUses - cooldown.Uses} and will reset in {cooldown.ResetTime - DateTimeOffset.Now}"
+                        );
+                    }
+                }
+
+                allGood |= ignoreChecks;
+
+                if (!allGood)
+                    continue;
+
+                IEnumerable<string> args = pieces.Skip(1);
+
+                if (!BuildArguments(args, c, out object[] parsed))
+                    continue;
+
+                foreach (PreconditionAttribute precond in c.Preconditions)
+                {
+                    precond.Use();
+                }
+
+                try
+                {
+                    Logger.Log($"Built arguments for command {command}.");
+
+                    IEnumerator RunCommand()
+                    {
+                        /*
+                         * We have to wait a frame in order to make Unity itself call
+                         * the MoveNext on the IEnumerator
+                         *
+                         * This forces it to run on the main thread, so Unity doesn't break.
+                         */
+                        yield return null;
+
+                        c.ClassInstance.SetContext(client, client._input, client._config.TwitchChannel);
+                        if (c.MethodInfo.ReturnType == typeof(IEnumerator))
+                        {
+                            yield return c.MethodInfo.Invoke(c.ClassInstance, parsed) as IEnumerator;
+                        }
+                        else
+                        {
+                            c.MethodInfo.Invoke(c.ClassInstance, parsed);
+                        }
+                    }
+
+                    _coroutineRunner.StartCoroutine(RunCommand());
+
+                }
+                catch (Exception e)
+                {
+                    Logger.Log(e.ToString());
+                }
+            }
+        }
+
         private bool BuildArguments(IEnumerable<string> args, Command command, out object[] parsed)
         {
             parsed = null;
@@ -182,11 +263,11 @@ namespace HollowTwitch
             }
         }
 
-        public void RegisterCommands<T>()
+        public void RegisterCommands<T>() where T: CommandBase
         {
             MethodInfo[] methods = typeof(T).GetMethods(BindingFlags.Public | BindingFlags.Instance);
 
-            object instance = Activator.CreateInstance(typeof(T));
+            CommandBase instance = (CommandBase)Activator.CreateInstance(typeof(T));
 
             foreach (MethodInfo method in methods)
             {

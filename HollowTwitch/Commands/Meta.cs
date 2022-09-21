@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace HollowTwitch.Commands
 {
-    public class Meta
+    public class Meta : CommandBase
     {
         [OwnerOnly]
         [HKCommand("blacklist")]

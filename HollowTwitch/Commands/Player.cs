@@ -17,7 +17,7 @@ using UObject = UnityEngine.Object;
 
 namespace HollowTwitch.Commands
 {
-    public class Player
+    public class Player : CommandBase
     {
         // Most (all) of the commands stolen from Chaos Mod by Seanpr
         private GameObject _maggot;

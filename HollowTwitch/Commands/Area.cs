@@ -9,7 +9,7 @@ using Vasi;
 
 namespace HollowTwitch.Commands
 {
-    public class Area
+    public class Area : CommandBase
     {
         [HKCommand("bees")]
         [Cooldown(120)]

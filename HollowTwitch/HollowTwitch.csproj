@@ -9,50 +9,51 @@
         <Version>2.1.0</Version>
         <LangVersion>latest</LangVersion>
         <DebugType>portable</DebugType>
+		<HKDir>C:\Program Files (x86)\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed</HKDir>
     </PropertyGroup>
 
     <ItemGroup>
         <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>..\..\..\References\Assembly-CSharp.dll</HintPath>
+            <HintPath>$(HKDir)\Assembly-CSharp.dll</HintPath>
         </Reference>
         <Reference Include="MMHOOK_Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\..\References\MMHOOK_Assembly-CSharp.dll</HintPath>
+          <HintPath>$(HKDir)\MMHOOK_Assembly-CSharp.dll</HintPath>
         </Reference>
         <Reference Include="MonoMod.RuntimeDetour, Version=21.4.29.1, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\..\References\MonoMod.RuntimeDetour.dll</HintPath>
+          <HintPath>$(HKDir)\MonoMod.RuntimeDetour.dll</HintPath>
         </Reference>
         <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\..\References\Newtonsoft.Json.dll</HintPath>
+          <HintPath>$(HKDir)\Newtonsoft.Json.dll</HintPath>
         </Reference>
         <Reference Include="PlayMaker, Version=1.6.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\..\References\PlayMaker.dll</HintPath>
+          <HintPath>$(HKDir)\PlayMaker.dll</HintPath>
         </Reference>
         <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\..\References\UnityEngine.dll</HintPath>
+          <HintPath>$(HKDir)\UnityEngine.dll</HintPath>
         </Reference>
         <Reference Include="UnityEngine.AssetBundleModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>..\..\..\References\UnityEngine.AssetBundleModule.dll</HintPath>
+            <HintPath>$(HKDir)\UnityEngine.AssetBundleModule.dll</HintPath>
         </Reference>
         <Reference Include="UnityEngine.AudioModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\..\References\UnityEngine.AudioModule.dll</HintPath>
+          <HintPath>$(HKDir)\UnityEngine.AudioModule.dll</HintPath>
         </Reference>
         <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>..\..\..\References\UnityEngine.CoreModule.dll</HintPath>
+            <HintPath>$(HKDir)\UnityEngine.CoreModule.dll</HintPath>
         </Reference>
         <Reference Include="UnityEngine.ParticleSystemModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\..\References\UnityEngine.ParticleSystemModule.dll</HintPath>
+          <HintPath>$(HKDir)\UnityEngine.ParticleSystemModule.dll</HintPath>
         </Reference>
         <Reference Include="UnityEngine.Physics2DModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\..\References\UnityEngine.Physics2DModule.dll</HintPath>
+          <HintPath>$(HKDir)\UnityEngine.Physics2DModule.dll</HintPath>
         </Reference>
         <Reference Include="UnityEngine.UnityWebRequestModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\..\References\UnityEngine.UnityWebRequestModule.dll</HintPath>
+          <HintPath>$(HKDir)\UnityEngine.UnityWebRequestModule.dll</HintPath>
         </Reference>
         <Reference Include="UnityEngine.UnityWebRequestTextureModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-          <HintPath>..\..\..\References\UnityEngine.UnityWebRequestTextureModule.dll</HintPath>
+          <HintPath>$(HKDir)\UnityEngine.UnityWebRequestTextureModule.dll</HintPath>
         </Reference>
         <Reference Include="Vasi, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null">
-            <HintPath>..\..\..\References\Mods\Vasi.dll</HintPath>
+            <HintPath>$(HKDir)\Mods\Vasi\Vasi.dll</HintPath>
         </Reference>
     </ItemGroup>
 

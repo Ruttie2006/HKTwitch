@@ -15,7 +15,7 @@ using UObject = UnityEngine.Object;
 namespace HollowTwitch.Commands
 {
     [UsedImplicitly]
-    public class Camera
+    public class Camera : CommandBase
     {
         public Camera()
         {

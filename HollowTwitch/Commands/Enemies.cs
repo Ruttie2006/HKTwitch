@@ -12,7 +12,7 @@ using USceneManager = UnityEngine.SceneManagement.SceneManager;
 
 namespace HollowTwitch.Commands
 {
-    public class Enemies
+    public class Enemies : CommandBase
     {
         [HKCommand("spawn")]
         [Summary("Spawns an enemy.\nEnemies: [aspid, buzzer, roller]")]

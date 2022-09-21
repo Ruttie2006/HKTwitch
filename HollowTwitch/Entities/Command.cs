@@ -11,11 +11,11 @@ namespace HollowTwitch.Entities
         public MethodInfo MethodInfo { get; }
         public int Priority { get; }
         public ParameterInfo[] Parameters { get; }
-        public object ClassInstance { get; }
+        public CommandBase ClassInstance { get; }
         public IEnumerable<PreconditionAttribute> Preconditions { get; }
 
 
-        public Command(string name, MethodInfo method, object classInstance)
+        public Command(string name, MethodInfo method, CommandBase classInstance)
         {
             Name = name;
             MethodInfo = method;

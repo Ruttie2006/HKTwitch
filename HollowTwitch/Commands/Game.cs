@@ -14,7 +14,7 @@ using UObject = UnityEngine.Object;
 namespace HollowTwitch.Commands
 {
     [UsedImplicitly]
-    public class Game
+    public class Game : CommandBase
     {
         internal static AudioClip[] Clips { get; private set; }
 

@@ -13,7 +13,7 @@ namespace HollowTwitch.Clients
     {
         private const string LocalUser = "LocalUser";
 
-        public event Action<string, string> ChatMessageReceived;
+        public event Action<bool, string, string> ChatMessageReceived;
         public event Action<string> ClientErrored;
 
         private static TcpClient _client;
@@ -95,7 +95,7 @@ namespace HollowTwitch.Clients
             
             Logger.Log($"Received message: {LocalUser}: {msg}");
 
-            ChatMessageReceived?.Invoke(LocalUser, msg);
+            ChatMessageReceived?.Invoke(false, LocalUser, msg);
             
             stream.BeginRead(receiveBuf, 0, 4096, RecvCallback, null);
         }

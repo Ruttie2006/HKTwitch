@@ -35,7 +35,7 @@ namespace HollowTwitch.Clients
     {
         private readonly List<Message> _log = new();
         
-        public event Action<string, string> ChatMessageReceived;
+        public event Action<bool, string, string> ChatMessageReceived;
         public event Action<string>         ClientErrored;
         public event Action<string>         RawPayload;
 
@@ -150,7 +150,7 @@ namespace HollowTwitch.Clients
                     if (TimeOut(m))
                         continue;
 
-                    ChatMessageReceived?.Invoke(m.user, m.text);
+                    ChatMessageReceived?.Invoke(false, m.user, m.text);
                 }
             }
             catch

@@ -127,7 +127,7 @@ namespace HollowTwitch
             _currentThread.Abort();
         }
 
-        private void OnMessageReceived(string user, string message)
+        private void OnMessageReceived(bool twitch, string user, string message)
         {
             Log($"Twitch chat: [{user}: {message}]");
 
@@ -138,16 +138,10 @@ namespace HollowTwitch
 
             string command = trimmed.Substring(Config.Prefix.Length).Trim();
 
-            bool admin = Config.AdminUsers.Contains(user, StringComparer.OrdinalIgnoreCase)
-                || user.ToLower() == "5fiftysix6"
-                || user.ToLower() == "sid0003";
-
-            bool banned = Config.BannedUsers.Contains(user, StringComparer.OrdinalIgnoreCase);
-
-            if (!admin && banned)
+            if (Config.BannedUsers.Contains(user, StringComparer.OrdinalIgnoreCase))
                 return;
 
-            Processor.Execute(user, command, Config.BlacklistedCommands.AsReadOnly(), admin);
+            Processor.ExecuteTwitch((TwitchClient)_client, user, command, Config.BlacklistedCommands.AsReadOnly(), Config.AdminUsers.Contains(user, StringComparer.OrdinalIgnoreCase));
         }
 
         private void GenerateHelpInfo()
