@@ -20,9 +20,7 @@ namespace HollowTwitch
     {
         private const char Seperator = ' ';
 
-        public ReadOnlyCollection<Command> Commands { get => commands.AsReadOnly(); }
-
-        internal List<Command> commands { get; }
+        internal List<Command> Commands { get; }
         
         private readonly Dictionary<Type, IArgumentParser> _parsers;
         
@@ -30,7 +28,7 @@ namespace HollowTwitch
 
         public CommandProcessor()
         {
-            commands = new List<Command>();
+            Commands = new List<Command>();
             _parsers = new Dictionary<Type, IArgumentParser>();
 
             var go = new GameObject();
@@ -49,7 +47,7 @@ namespace HollowTwitch
         {
             string[] pieces = command.Split(Seperator);
 
-            IOrderedEnumerable<Command> found = commands
+            IOrderedEnumerable<Command> found = Commands
                                                 .Where(x => x.Name.Equals(pieces[0], StringComparison.InvariantCultureIgnoreCase))
                                                 .OrderByDescending(x => x.Priority);
             
@@ -127,7 +125,7 @@ namespace HollowTwitch
         {
             string[] pieces = command.Split(Seperator);
 
-            IOrderedEnumerable<Command> found = commands
+            IOrderedEnumerable<Command> found = Commands
                                                 .Where(x => x.Name.Equals(pieces[0], StringComparison.InvariantCultureIgnoreCase))
                                                 .OrderByDescending(x => x.Priority);
 
@@ -278,7 +276,7 @@ namespace HollowTwitch
                 if (attr == null)
                     continue;
 
-                commands.Add(new Command(attr.Name, method, instance));
+                Commands.Add(new Command(attr.Name, method, instance));
                 
                 Logger.Log($"Added command: {attr.Name}");
             }

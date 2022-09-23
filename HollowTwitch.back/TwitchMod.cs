@@ -6,12 +6,14 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using HollowTwitch.Clients;
+using HollowTwitch.Commands;
 using HollowTwitch.Entities;
 using HollowTwitch.Entities.Attributes;
 using HollowTwitch.Precondition;
 using JetBrains.Annotations;
 using Modding;
 using UnityEngine;
+using Camera = HollowTwitch.Commands.Camera;
 
 namespace HollowTwitch
 {
@@ -43,14 +45,28 @@ namespace HollowTwitch
 
         public override void Initialize(Dictionary<string, Dictionary<string, GameObject>> preloadedObjects)
         {
+            ObjectLoader.Load(preloadedObjects);
+            ObjectLoader.LoadAssets();
+
             ModHooks.ApplicationQuitHook += OnQuit;
 
             ReceiveCommands();
         }
 
+        public override List<(string, string)> GetPreloadNames() => ObjectLoader.ObjectList.Values.ToList();
+
         private void ReceiveCommands()
         {
             Processor = new CommandProcessor();
+
+            Processor.RegisterCommands<Player>();
+            Processor.RegisterCommands<Enemies>();
+            Processor.RegisterCommands<Area>();
+            Processor.RegisterCommands<Camera>();
+            Processor.RegisterCommands<Game>();
+            Processor.RegisterCommands<Meta>();
+
+            ConfigureCooldowns();
 
             if (Config.TwitchToken is null)
             {
@@ -84,6 +100,35 @@ namespace HollowTwitch
             Log("Started receiving");
         }
 
+        private void ConfigureCooldowns()
+        {
+            // No cooldowns configured, let's populate the dictionary.
+            if (Config.Cooldowns.Count == 0)
+            {
+                foreach (Command c in Processor.Commands)
+                {
+                    CooldownAttribute cd = c.Preconditions.OfType<CooldownAttribute>().FirstOrDefault();
+
+                    if (cd == null)
+                        continue;
+
+                    Config.Cooldowns[c.Name] = (int) cd.Cooldown.TotalSeconds;
+                }
+
+                return;
+            }
+
+            foreach (Command c in Processor.Commands)
+            {
+                if (!Config.Cooldowns.TryGetValue(c.Name, out int time))
+                    continue;
+
+                CooldownAttribute cd = c.Preconditions.OfType<CooldownAttribute>().First();
+
+                cd.Cooldown = TimeSpan.FromSeconds(time);
+            }
+        }
+
         private void OnQuit()
         {
             _client.Dispose();
@@ -113,7 +158,7 @@ namespace HollowTwitch
 
             sb.AppendLine("Twitch Mod Command List.\n");
 
-            foreach (Command command in Processor.commands)
+            foreach (Command command in Processor.Commands)
             {
                 string name = command.Name;
                 sb.AppendLine($"Command: {name}");

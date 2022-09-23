@@ -57,6 +57,10 @@
         </Reference>
     </ItemGroup>
 
+    <ItemGroup>
+        <EmbeddedResource Include="shaders" />
+    </ItemGroup>
+
     <Target Name="CopyMod" AfterTargets="PostBuildEvent">
         <Copy SourceFiles="$(TargetPath);$(TargetDir)$(TargetName).pdb" DestinationFolder="D:/Steam/steamapps/common/Hollow Knight/hollow_knight_Data/Managed/Mods/$(TargetName)" SkipUnchangedFiles="true" />
     </Target>

@@ -32,5 +32,7 @@ namespace HollowTwitch
         public List<string> AdminUsers = new();
 
         public List<string> BannedUsers = new();
+
+        public Dictionary<string, int> Cooldowns = new();
     }
 }
