@@ -12,21 +12,21 @@ namespace HollowTwitch.Clients
         internal StreamReader _output;
         internal StreamWriter _input;
 
-        internal readonly Config _config;
+        internal readonly GlobalConfig _config;
 
         public event Action<bool, string, string> ChatMessageReceived;
         public event Action<string> RawPayload;
 
         public event Action<string> ClientErrored;
 
-        public TwitchClient(Config config)
+        public TwitchClient(GlobalConfig config)
         {
             _config = config;
             ConnectAndAuthenticate(config);
             RawPayload += ProcessMessage;
         }
 
-        private void ConnectAndAuthenticate(Config config)
+        private void ConnectAndAuthenticate(GlobalConfig config)
         {
             _client = new TcpClient("irc.twitch.tv", 6667);
 

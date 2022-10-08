@@ -22,7 +22,7 @@ namespace HollowTwitch.Clients
 
         private readonly int Port;
         
-        public LocalClient(Config config,int port = 1234)
+        public LocalClient(GlobalConfig config,int port = 1234)
         {
             Port = port;
             

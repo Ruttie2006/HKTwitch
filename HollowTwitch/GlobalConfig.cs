@@ -9,7 +9,7 @@ using UnityEngine.Serialization;
 namespace HollowTwitch
 {
     [Serializable]
-    public class Config
+    public class GlobalConfig
     {
         [JsonConverter(typeof(StringEnumConverter))]
         public ClientType Client = ClientType.Twitch;

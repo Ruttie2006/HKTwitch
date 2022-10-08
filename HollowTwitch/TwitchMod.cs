@@ -16,21 +16,21 @@ using UnityEngine;
 namespace HollowTwitch
 {
     [UsedImplicitly]
-    public class TwitchMod : Mod, ITogglableMod, IGlobalSettings<Config>
+    public class TwitchMod : Mod, ITogglableMod, IGlobalSettings<GlobalConfig>
     {
         private IClient _client;
         
         private Thread _currentThread;
 
-        public Config Config = new();
+        public GlobalConfig Config = new();
 
         public CommandProcessor Processor { get; private set; }
 
         public static TwitchMod Instance;
         
-        public void OnLoadGlobal(Config s) => Config = s;
+        public void OnLoadGlobal(GlobalConfig s) => Config = s;
 
-        public Config OnSaveGlobal() => Config;
+        public GlobalConfig OnSaveGlobal() => Config;
 
         public static readonly Version Version = new(2, 3, 0, 0);
         public override string GetVersion() =>
@@ -44,13 +44,19 @@ namespace HollowTwitch
         public override void Initialize(Dictionary<string, Dictionary<string, GameObject>> preloadedObjects)
         {
             ModHooks.ApplicationQuitHook += OnQuit;
-
+            ModHooks.FinishedLoadingModsHook += OnFinishLoad;
             ReceiveCommands();
+        }
+
+        private void OnFinishLoad()
+        {
+            GenerateHelpInfo();
         }
 
         private void ReceiveCommands()
         {
             Processor = new CommandProcessor();
+            Processor.Initialize();
 
             if (Config.TwitchToken is null)
             {
@@ -78,8 +84,6 @@ namespace HollowTwitch
                 IsBackground = true
             };
             _currentThread.Start();
-
-            GenerateHelpInfo();
 
             Log("Started receiving");
         }
@@ -124,7 +128,7 @@ namespace HollowTwitch
                 SummaryAttribute   summary    = attributes.OfType<SummaryAttribute>().FirstOrDefault();
                 
                 sb.AppendLine($"Usage: {Config.Prefix}{name} {args}");
-                sb.AppendLine($"Cooldown: {(cooldown is null ? "This command has no cooldown" : $"{cooldown.MaxUses} use(s) per {cooldown.Cooldown}.")}");
+                sb.AppendLine($"Cooldown: {(cooldown is null ? "This command has no cooldown" : $"{cooldown.MaxUses} use(s) per {cooldown.Cooldown.ToString().TrimEnd('0')}.")}");
                 sb.AppendLine($"Summary:\n{(summary?.Summary ?? "No summary provided.")}\n");
             }
 

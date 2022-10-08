@@ -48,7 +48,7 @@ namespace HollowTwitch.Clients
             { "visit_id", "" },
         };
 
-        public BiliBiliClient(Config config)
+        public BiliBiliClient(GlobalConfig config)
         {
             data["roomid"] = config.BilibiliRoomID.ToString();
 

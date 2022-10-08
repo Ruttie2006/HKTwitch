@@ -9,7 +9,9 @@ using System.Reflection;
 using HollowTwitch.Clients;
 using HollowTwitch.Entities;
 using HollowTwitch.Entities.Attributes;
+using HollowTwitch.Extensibility;
 using HollowTwitch.Precondition;
+using HutongGames.PlayMaker;
 using UnityEngine;
 using UObject = UnityEngine.Object;
 
@@ -26,13 +28,16 @@ namespace HollowTwitch
         
         private readonly Dictionary<Type, IArgumentParser> _parsers;
         
-        private readonly MonoBehaviour _coroutineRunner;
+        private MonoBehaviour _coroutineRunner;
 
         public CommandProcessor()
         {
             commands = new List<Command>();
             _parsers = new Dictionary<Type, IArgumentParser>();
+        }
 
+        internal void Initialize()
+        {
             var go = new GameObject();
 
             UObject.DontDestroyOnLoad(go);
@@ -265,23 +270,76 @@ namespace HollowTwitch
             }
         }
 
-        public void RegisterCommands<T>() where T: CommandBase
+#nullable enable
+        public void RegisterCooldowns(ICooldownConfig config, IEnumerable<Command>? ownedCommands = null)
         {
-            MethodInfo[] methods = typeof(T).GetMethods(BindingFlags.Public | BindingFlags.Instance);
+            config.Cooldowns ??= new();
+            // No cooldowns configured, let's populate the dictionary.
+            if (config.Cooldowns.Count == 0)
+            {
+                foreach (Command c in TwitchMod.Instance.Processor.Commands)
+                {
+                    if (ownedCommands != null && !ownedCommands.Contains(c))
+                        continue;
 
-            CommandBase instance = (CommandBase)Activator.CreateInstance(typeof(T));
+                    CooldownAttribute cd = c.Preconditions.OfType<CooldownAttribute>().FirstOrDefault();
+
+                    if (cd == null)
+                        continue;
+
+                    config.Cooldowns[c.Name] = (int)cd.Cooldown.TotalSeconds;
+                }
+
+                return;
+            }
+
+            foreach (Command c in TwitchMod.Instance.Processor.Commands)
+            {
+                if (ownedCommands != null && !ownedCommands.Contains(c))
+                    continue;
+
+                if (!config.Cooldowns.TryGetValue(c.Name, out double time))
+                    continue;
+
+                CooldownAttribute cd = c.Preconditions.OfType<CooldownAttribute>().First();
+
+                cd.Cooldown = TimeSpan.FromSeconds(time);
+            }
+        }
+#nullable restore
+
+        public List<Command> RegisterCommands(Assembly asm)
+        {
+            var cmds = new List<Command>();
+            foreach (var type in asm.DefinedTypes.Where(x => x.IsSubclassOf(typeof(CommandBase))))
+                cmds.AddRange(RegisterCommands(type));
+            return cmds;
+        }
+
+        public List<Command> RegisterCommands<T>() where T : CommandBase =>
+            RegisterCommands(typeof(T));
+
+        public List<Command> RegisterCommands(Type type)
+        {
+            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance);
+            var instance = (CommandBase)Activator.CreateInstance(type);
+            var cmdList = new List<Command>();
 
             foreach (MethodInfo method in methods)
             {
-                HKCommandAttribute attr = method.GetCustomAttributes(typeof(HKCommandAttribute), false).OfType<HKCommandAttribute>().FirstOrDefault();
+                var attr = method.GetCustomAttributes(typeof(HKCommandAttribute), false).OfType<HKCommandAttribute>().FirstOrDefault();
 
                 if (attr == null)
                     continue;
 
-                commands.Add(new Command(attr.Name, method, instance));
-                
+                var cmd = new Command(attr.Name, method, instance);
+
+                commands.Add(cmd);
+                cmdList.Add(cmd);
+
                 Logger.Log($"Added command: {attr.Name}");
             }
+            return cmdList;
         }
     }
 }
