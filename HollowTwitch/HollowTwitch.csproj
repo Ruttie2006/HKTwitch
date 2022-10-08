@@ -6,7 +6,7 @@
         <AssemblyTitle>HollowTwitch</AssemblyTitle>
         <Product>HollowTwitch</Product>
         <OutputPath>bin\$(Configuration)\</OutputPath>
-        <Version>2.3.0</Version>
+        <Version>2.5.0.0</Version>
         <LangVersion>latest</LangVersion>
         <DebugType>portable</DebugType>
 		<HKDir>C:\Program Files (x86)\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed</HKDir>

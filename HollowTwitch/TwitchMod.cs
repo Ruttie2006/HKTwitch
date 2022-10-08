@@ -32,9 +32,9 @@ namespace HollowTwitch
 
         public GlobalConfig OnSaveGlobal() => Config;
 
-        public static readonly Version Version = new(2, 3, 0, 0);
+        public static readonly Version Version = new(2, 5, 0, 0);
         public override string GetVersion() =>
-            "R." + Version.ToString(3);
+            "R." + Version.ToString(4);
 
         public TwitchMod() : base("HollowTwitch")
         {
