@@ -3,18 +3,26 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
+using HollowTwitch.Entities;
+using HollowTwitch.Entities.Twitch;
 
 namespace HollowTwitch.Clients
 {
     public class TwitchClient : IClient
     {
+        public static readonly string[] MessageSeperators = new string[1] { "\r\n" };
         private TcpClient _client;
-        internal StreamReader _output;
-        internal StreamWriter _input;
+        public StreamReader Output;
+		public StreamWriter Input;
 
         internal readonly GlobalConfig _config;
 
-        public event Action<bool, string, string> ChatMessageReceived;
+        public ClientType Type => ClientType.Twitch;
+
+#nullable enable
+        public event Action<TwitchMessage>? ReceivedChatMessage;
+        event Action<IMessage> IClient.ReceivedChatMessage { add => ReceivedChatMessage += value; remove => ReceivedChatMessage -= value; }
+#nullable restore
         public event Action<string> RawPayload;
 
         public event Action<string> ClientErrored;
@@ -30,8 +38,8 @@ namespace HollowTwitch.Clients
         {
             _client = new TcpClient("irc.twitch.tv", 6667);
 
-            _output = new StreamReader(_client.GetStream());
-            _input = new StreamWriter(_client.GetStream())
+            Output = new StreamReader(_client.GetStream());
+            Input = new StreamWriter(_client.GetStream())
             {
                 AutoFlush = true
             };
@@ -65,12 +73,42 @@ namespace HollowTwitch.Clients
                 SendMessage("PONG :tmi.twitch.tv");
                 Console.WriteLine("sent pong!");
             }
-            else if (message.Contains("PRIVMSG"))
+            else
             {
-                string user = message.Substring(1, message.IndexOf("!") - 1);
-                string cleaned = message.Split(':').Last();
-                
-                ChatMessageReceived?.Invoke(true, user, cleaned);
+                // Can't be bothered to deal with tags yet, so we'll skip them (hopefully)
+                if (message[0] == '@')
+                    TwitchMod.Instance.LogWarn("Somehow, tag values were received in a message. This should not be possible, and currently this mod does not support them.");
+
+				var pos = message.IndexOf(':');
+                string userName = message.Substring(pos, message.IndexOf("!") - pos);
+                pos += userName.Length;
+                string userMail = message.Substring(pos, message.IndexOf(' '));
+                var user = new TwitchUser()
+                {
+                    Name = userName,
+                    Email = userMail
+                };
+
+                var cmd = message.Substring(pos, message.Substring(pos).IndexOf(' '));
+                pos += cmd.Length;
+
+                switch (cmd)
+                {
+                    case "PRIVMSG":
+                        var channel = message.Substring(pos, message.Substring(pos).IndexOf(' '));
+                        var privMsg = new TwitchMessage()
+                        {
+                            Raw = message,
+                            Content = message.Substring(pos),
+                            User = user,
+                            ChannelId = channel.Substring(1)
+                        };
+                        ReceivedChatMessage?.Invoke(privMsg);
+						break;
+                    default:
+						TwitchMod.Instance.LogDebug($"Received unknown message: \'{message}\'.");
+                        break;
+				}
             }
         }
 
@@ -86,8 +124,14 @@ namespace HollowTwitch.Clients
                         ConnectAndAuthenticate(_config);
                     }
 
-                    string message = _output.ReadLine();
-                    RawPayload?.Invoke(message);
+                    string raw = Output.ReadLine();
+					// "When the Twitch IRC server sends a message, it may contain a single message or multiple messages"
+					var messages = raw.Split(MessageSeperators, StringSplitOptions.RemoveEmptyEntries);
+					// "[The Twitch IRC server] may also send a message multiple times if it doesn’t think the bot received it"
+                    // I can't be bothered to deal with that, so I won't.
+
+					foreach (var message in messages.Distinct())
+                        RawPayload?.Invoke(message);
                 }
                 catch (Exception e)
                 {
@@ -99,12 +143,12 @@ namespace HollowTwitch.Clients
             // ReSharper disable once FunctionNeverReturns
         }
 
-        private void SendMessage(string message) => _input.WriteLine(message);
+        private void SendMessage(string message) => Input.WriteLine(message);
 
         public void Dispose()
         {
-            _input.Dispose();
-            _output.Dispose();
+            Input.Dispose();
+            Output.Dispose();
             _client.Close();
         }
     }

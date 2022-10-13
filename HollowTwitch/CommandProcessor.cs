@@ -9,6 +9,10 @@ using System.Reflection;
 using HollowTwitch.Clients;
 using HollowTwitch.Entities;
 using HollowTwitch.Entities.Attributes;
+using HollowTwitch.Entities.BiliBili;
+using HollowTwitch.Entities.Contexts;
+using HollowTwitch.Entities.Local;
+using HollowTwitch.Entities.Twitch;
 using HollowTwitch.Extensibility;
 using HollowTwitch.Precondition;
 using HutongGames.PlayMaker;
@@ -20,20 +24,17 @@ namespace HollowTwitch
     // Scuffed command proccersor thingy, needs a lot of work
     public class CommandProcessor
     {
-        private const char Seperator = ' ';
+        public const char Seperator = ' ';
 
-        public ReadOnlyCollection<Command> Commands { get => commands.AsReadOnly(); }
-
-        internal List<Command> commands { get; }
-        
-        private readonly Dictionary<Type, IArgumentParser> _parsers;
+        public List<Command> Commands { get; init; }
+        public Dictionary<Type, IArgumentParser> ArgumentParsers { get; init; }
         
         private MonoBehaviour _coroutineRunner;
 
         public CommandProcessor()
         {
-            commands = new List<Command>();
-            _parsers = new Dictionary<Type, IArgumentParser>();
+            Commands = new List<Command>();
+            ArgumentParsers = new Dictionary<Type, IArgumentParser>();
         }
 
         internal void Initialize()
@@ -47,24 +48,49 @@ namespace HollowTwitch
 
         public void AddTypeParser<T>(T parser, Type t) where T : IArgumentParser
         {
-            _parsers.Add(t, parser);
+            ArgumentParsers.Add(t, parser);
         }
 
-        public void Execute(string user, string command, ReadOnlyCollection<string> blacklist, bool ignoreChecks = false)
+        public void Execute(IClient client, IMessage message, ReadOnlyCollection<string> blacklist, bool ignoreChecks = false)
         {
-            string[] pieces = command.Split(Seperator);
+            var trimmedContent = message.Content.Substring(TwitchMod.Instance.Config.Prefix.Length);
+            string[] pieces = trimmedContent.Split(Seperator);
+			IEnumerable<string> args = pieces.Skip(1);
 
-            IOrderedEnumerable<Command> found = commands
-                                                .Where(x => x.Name.Equals(pieces[0], StringComparison.InvariantCultureIgnoreCase))
+			IOrderedEnumerable<Command> found = Commands
+                                                .Where(x => x.Name.Equals(pieces[0],
+													TwitchMod.Instance.Config.CaseSensitive
+                                                    ? StringComparison.InvariantCulture
+                                                    : StringComparison.InvariantCultureIgnoreCase))
                                                 .OrderByDescending(x => x.Priority);
-            
-            foreach (Command c in found)
+
+			ICommandContext ctx = client.Type switch
+			{
+				ClientType.Twitch => new TwitchCommandContext(client as TwitchClient, message as TwitchMessage)
+				{
+					Arguments = args.ToArray(),
+					CommandName = pieces[0],
+				},
+				ClientType.Bilibili => new BiliBiliCommandContext(client as BiliBiliClient, message as BiliMessage)
+				{
+					Arguments = args.ToArray(),
+					CommandName = pieces[0]
+				},
+				ClientType.Local => new LocalCommandContext(client as LocalClient, message as LocalMessage)
+				{
+					Arguments = args.ToArray(),
+					CommandName = pieces[0]
+				},
+				_ => new BaseCommandContext(message, pieces[0], args.ToArray())
+			};
+
+			foreach (Command c in found)
             {
                 bool allGood = !blacklist.Contains(c.Name, StringComparer.OrdinalIgnoreCase);
 
-                foreach (PreconditionAttribute p in c.Preconditions)
+				foreach (PreconditionAttribute p in c.Preconditions)
                 {
-                    if (p.Check(user)) continue;
+                    if (p.Check(ctx)) continue;
 
                     allGood = false;
 
@@ -83,11 +109,9 @@ namespace HollowTwitch
                 if (!allGood)
                     continue;
 
-                IEnumerable<string> args = pieces.Skip(1);
-
                 if (!BuildArguments(args, c, out object[] parsed))
                     continue;
-                
+
                 foreach (PreconditionAttribute precond in c.Preconditions)
                 {
                     precond.Use();
@@ -95,7 +119,7 @@ namespace HollowTwitch
 
                 try
                 {
-                    Logger.Log($"Built arguments for command {command}.");
+                    Logger.LogDebug($"Built arguments for command {message.Content}.");
 
                     IEnumerator RunCommand()
                     {
@@ -106,7 +130,9 @@ namespace HollowTwitch
                          * This forces it to run on the main thread, so Unity doesn't break.
                          */
                         yield return null;
-                        
+
+
+                        c.ClassInstance.SetContext(ctx);
                         if (c.MethodInfo.ReturnType == typeof(IEnumerator))
                         {
                             yield return c.MethodInfo.Invoke(c.ClassInstance, parsed) as IEnumerator;
@@ -122,86 +148,7 @@ namespace HollowTwitch
                 }
                 catch (Exception e)
                 {
-                    Logger.Log(e.ToString());
-                }
-            }
-        }
-
-
-        public void ExecuteTwitch(TwitchClient client, string user, string command, ReadOnlyCollection<string> blacklist, bool ignoreChecks = false)
-        {
-            string[] pieces = command.Split(Seperator);
-
-            IOrderedEnumerable<Command> found = commands
-                                                .Where(x => x.Name.Equals(pieces[0], StringComparison.InvariantCultureIgnoreCase))
-                                                .OrderByDescending(x => x.Priority);
-
-            foreach (Command c in found)
-            {
-                bool allGood = !blacklist.Contains(c.Name, StringComparer.OrdinalIgnoreCase);
-
-                foreach (PreconditionAttribute p in c.Preconditions)
-                {
-                    if (p.Check(user)) continue;
-
-                    allGood = false;
-
-                    if (c.Preconditions.FirstOrDefault() is CooldownAttribute cooldown)
-                    {
-                        Logger.Log
-                        (
-                            $"The coodown for command {c.Name} failed. "
-                            + $"The cooldown has {cooldown.MaxUses - cooldown.Uses} and will reset in {cooldown.ResetTime - DateTimeOffset.Now}"
-                        );
-                    }
-                }
-
-                allGood |= ignoreChecks;
-
-                if (!allGood)
-                    continue;
-
-                IEnumerable<string> args = pieces.Skip(1);
-
-                if (!BuildArguments(args, c, out object[] parsed))
-                    continue;
-
-                foreach (PreconditionAttribute precond in c.Preconditions)
-                {
-                    precond.Use();
-                }
-
-                try
-                {
-                    Logger.Log($"Built arguments for command {command}.");
-
-                    IEnumerator RunCommand()
-                    {
-                        /*
-                         * We have to wait a frame in order to make Unity itself call
-                         * the MoveNext on the IEnumerator
-                         *
-                         * This forces it to run on the main thread, so Unity doesn't break.
-                         */
-                        yield return null;
-
-                        c.ClassInstance.SetContext(client, client._input, client._config.TwitchChannel);
-                        if (c.MethodInfo.ReturnType == typeof(IEnumerator))
-                        {
-                            yield return c.MethodInfo.Invoke(c.ClassInstance, parsed) as IEnumerator;
-                        }
-                        else
-                        {
-                            c.MethodInfo.Invoke(c.ClassInstance, parsed);
-                        }
-                    }
-
-                    _coroutineRunner.StartCoroutine(RunCommand());
-
-                }
-                catch (Exception e)
-                {
-                    Logger.Log(e.ToString());
+                    Logger.LogError(e.ToString());
                 }
             }
         }
@@ -261,7 +208,7 @@ namespace HollowTwitch
             {
                 try
                 {
-                    return _parsers[type].Parse(arg);
+                    return ArgumentParsers[type].Parse(arg);
                 }
                 catch
                 {
@@ -334,7 +281,7 @@ namespace HollowTwitch
 
                 var cmd = new Command(attr.Name, method, instance);
 
-                commands.Add(cmd);
+                Commands.Add(cmd);
                 cmdList.Add(cmd);
 
                 Logger.Log($"Added command: {attr.Name}");

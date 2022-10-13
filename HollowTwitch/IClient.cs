@@ -1,13 +1,16 @@
 ﻿using System;
+using HollowTwitch.Clients;
+using HollowTwitch.Entities;
 
 namespace HollowTwitch
 {
     public interface IClient : IDisposable
     {
-        event Action<bool, string, string> ChatMessageReceived;
+        public event Action<IMessage> ReceivedChatMessage;
+        public ClientType Type { get; }
 
-        event Action<string> ClientErrored;
+		public event Action<string> ClientErrored;
 
-        void StartReceive();
+		public void StartReceive();
     }
 }

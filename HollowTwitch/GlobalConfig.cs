@@ -27,6 +27,8 @@ namespace HollowTwitch
         
         public string Prefix = "!";
 
+        public bool CaseSensitive = false;
+
         public List<string> BlacklistedCommands = new();
 
         public List<string> AdminUsers = new();

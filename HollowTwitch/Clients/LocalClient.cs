@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Net.Sockets;
 using System.Text;
+using HollowTwitch.Entities;
+using HollowTwitch.Entities.Local;
 
 namespace HollowTwitch.Clients
 {
@@ -9,12 +11,15 @@ namespace HollowTwitch.Clients
     /// You should make a server on your Machine and start it.
     /// The client will try to connect to your local Server and receive messages.
     /// </summary>
-    internal class LocalClient : IClient
+    public class LocalClient : IClient
     {
         private const string LocalUser = "LocalUser";
 
-        public event Action<bool, string, string> ChatMessageReceived;
-        public event Action<string> ClientErrored;
+        public ClientType Type => ClientType.Local;
+
+        public event Action<LocalMessage> ReceivedChatMessage;
+		event Action<IMessage> IClient.ReceivedChatMessage { add => ReceivedChatMessage += value; remove => ReceivedChatMessage -= value; }
+		public event Action<string> ClientErrored;
 
         private static TcpClient _client;
         private static byte[] receiveBuf;
@@ -91,11 +96,17 @@ namespace HollowTwitch.Clients
             
             Array.Copy(receiveBuf, data, byte_len);
 
-            string msg = Encoding.UTF8.GetString(data);
+            string message = Encoding.UTF8.GetString(data);
             
-            Logger.Log($"Received message: {LocalUser}: {msg}");
+            Logger.Log($"Received message: {LocalUser}: {message}");
 
-            ChatMessageReceived?.Invoke(false, LocalUser, msg);
+            var msg = new LocalMessage()
+            {
+                Content = message,
+                User = new LocalUser() { Name = LocalUser },
+            };
+
+			ReceivedChatMessage?.Invoke(msg);
             
             stream.BeginRead(receiveBuf, 0, 4096, RecvCallback, null);
         }

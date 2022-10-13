@@ -1,4 +1,5 @@
 ﻿using HollowTwitch.Entities.Attributes;
+using HollowTwitch.Entities.Contexts;
 
 namespace HollowTwitch.Precondition
 {
@@ -7,7 +8,7 @@ namespace HollowTwitch.Precondition
         // They really are
         private string _sceneName = "i hate shoutout memes they are so god damn annoying";
 
-        public override bool Check(string user)
+        public override bool Check(ICommandContext ctx)
         {
             string currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
 

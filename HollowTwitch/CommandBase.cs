@@ -4,25 +4,30 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using HollowTwitch.Entities;
+using HollowTwitch.Entities.Contexts;
+using HollowTwitch.Entities.Twitch;
 
 namespace HollowTwitch
 {
     public abstract class CommandBase
     {
-        public IClient Client { get; set; }
-        public StreamWriter Input { get; set; }
-        public string ChannelId { get; set; }
+        public IClient Client { get => Context.Client; }
+		public ICommandContext Context { get; set; }
 
-        public void SetContext(IClient client, StreamWriter input, string channel)
+        public void SetContext(ICommandContext ctx)
         {
-            Client = client;
-            Input = input;
-            ChannelId = channel;
+            Context = ctx;
         }
 
-        public virtual void SendMessage(string message)
+        public T GetContext<T>() where T : ICommandContext =>
+            (T)Context;
+
+        public virtual void Reply(string message)
         {
-            Input.WriteLine($"PRIVMSG #{ChannelId} : [BOT] {message}");
+            if (Context is not TwitchCommandContext ctx)
+                throw new InvalidOperationException("You cannot reply to messages not received via the twitch client!");
+            ctx.SendMessage(message);
         }
     }
 }

@@ -17,20 +17,20 @@ namespace HollowTwitch
 {
     [UsedImplicitly]
     public class TwitchMod : Mod, ITogglableMod, IGlobalSettings<GlobalConfig>
-    {
-        private IClient _client;
-        
-        private Thread _currentThread;
+	{
+		public static TwitchMod Instance;
 
-        public GlobalConfig Config = new();
+		private Thread _currentThread;
 
+		public IClient Client { get; private set; }
+		public GlobalConfig Config { get; private set; } = new();
         public CommandProcessor Processor { get; private set; }
-
-        public static TwitchMod Instance;
         
-        public void OnLoadGlobal(GlobalConfig s) => Config = s;
+        public void OnLoadGlobal(GlobalConfig s) =>
+            Config = s;
 
-        public GlobalConfig OnSaveGlobal() => Config;
+        public GlobalConfig OnSaveGlobal() =>
+            Config;
 
         public static readonly Version Version = new(2, 5, 0, 0);
         public override string GetVersion() =>
@@ -41,11 +41,11 @@ namespace HollowTwitch
             Instance = this;
         }
 
-        public override void Initialize(Dictionary<string, Dictionary<string, GameObject>> preloadedObjects)
+        public override void Initialize()
         {
             ModHooks.ApplicationQuitHook += OnQuit;
             ModHooks.FinishedLoadingModsHook += OnFinishLoad;
-            ReceiveCommands();
+            InitProcessor();
         }
 
         private void OnFinishLoad()
@@ -53,18 +53,18 @@ namespace HollowTwitch
             GenerateHelpInfo();
         }
 
-        private void ReceiveCommands()
+        private void InitProcessor()
         {
             Processor = new CommandProcessor();
             Processor.Initialize();
 
             if (Config.TwitchToken is null)
             {
-                Logger.Log("Token not found, relaunch the game with the fields in settings populated.");
+                LogError("Token not found, relaunch the game with the fields in settings populated.");
                 return;
             }
 
-            _client = Config.Client switch 
+            Client = Config.Client switch 
             {
                 ClientType.Twitch => new TwitchClient(Config),
                 
@@ -75,40 +75,39 @@ namespace HollowTwitch
                 _ => throw new InvalidOperationException($"Enum member {Config.Client} does not exist!") 
             };
 
-            _client.ChatMessageReceived += OnMessageReceived;
+            Client.ReceivedChatMessage += OnMessageReceived;
 
-            _client.ClientErrored += s => Log($"An error occured while receiving messages.\nError: {s}");
+            Client.ClientErrored += s => LogError($"An error occured while receiving messages.\nError: {s}");
 
-            _currentThread = new Thread(_client.StartReceive)
+            _currentThread = new Thread(Client.StartReceive)
             {
                 IsBackground = true
             };
             _currentThread.Start();
 
-            Log("Started receiving");
+            LogDebug("Started receiving");
         }
 
         private void OnQuit()
         {
-            _client.Dispose();
+            Client.Dispose();
             _currentThread.Abort();
         }
 
-        private void OnMessageReceived(bool twitch, string user, string message)
+        private void OnMessageReceived(IMessage message)
         {
-            Log($"Twitch chat: [{user}: {message}]");
+            LogDebug($"Message received: [{message.User}: {message.Content}]");
 
-            string trimmed = message.Trim();
+            string trimmed = message.Content.Trim();
             int index = trimmed.IndexOf(Config.Prefix);
 
-            if (index != 0) return;
-
-            string command = trimmed.Substring(Config.Prefix.Length).Trim();
-
-            if (Config.BannedUsers.Contains(user, StringComparer.OrdinalIgnoreCase))
+            if (index != 0)
                 return;
 
-            Processor.ExecuteTwitch((TwitchClient)_client, user, command, Config.BlacklistedCommands.AsReadOnly(), Config.AdminUsers.Contains(user, StringComparer.OrdinalIgnoreCase));
+            if (Config.BannedUsers.Contains(message.User.Name, StringComparer.OrdinalIgnoreCase))
+                return;
+
+            Processor.Execute(Client, message, Config.BlacklistedCommands.AsReadOnly(), Config.AdminUsers.Contains(message.User.Name, StringComparer.OrdinalIgnoreCase));
         }
 
         private void GenerateHelpInfo()
@@ -117,7 +116,7 @@ namespace HollowTwitch
 
             sb.AppendLine("Twitch Mod Command List.\n");
 
-            foreach (Command command in Processor.commands)
+            foreach (Command command in Processor.Commands)
             {
                 string name = command.Name;
                 sb.AppendLine($"Command: {name}");

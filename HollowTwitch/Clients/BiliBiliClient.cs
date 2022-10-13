@@ -10,6 +10,9 @@ using System.Threading;
 using DanmuJson;
 using Newtonsoft.Json;
 using HollowTwitch.Extensions;
+using HollowTwitch.Entities.BiliBili;
+using HollowTwitch.Entities.Twitch;
+using HollowTwitch.Entities;
 
 namespace HollowTwitch.Clients
 {
@@ -31,15 +34,20 @@ namespace HollowTwitch.Clients
     /// In the config, you just need to set up one variable
     /// BilibiliRoomID is the room id in your channel
     /// </summary>
-    internal class BiliBiliClient : IClient
+    public class BiliBiliClient : IClient
     {
         private readonly List<Message> _log = new();
+
+        public ClientType Type => ClientType.Bilibili;
         
-        public event Action<bool, string, string> ChatMessageReceived;
         public event Action<string>         ClientErrored;
         public event Action<string>         RawPayload;
+#nullable enable
+		public event Action<BiliMessage>? ReceivedChatMessage;
+		event Action<IMessage> IClient.ReceivedChatMessage { add => ReceivedChatMessage += value; remove => ReceivedChatMessage -= value; }
+#nullable restore
 
-        private const string URL = "https://api.live.bilibili.com/xlive/web-room/v1/dM/gethistory";
+		private const string URL = "https://api.live.bilibili.com/xlive/web-room/v1/dM/gethistory";
 
         private readonly Dictionary<string, string> data = new() {
             { "roomid", "PUT YOUR ROOM ID HERE" },
@@ -150,7 +158,14 @@ namespace HollowTwitch.Clients
                     if (TimeOut(m))
                         continue;
 
-                    ChatMessageReceived?.Invoke(false, m.user, m.text);
+                    var msg = new BiliMessage()
+                    {
+                        Content = m.text,
+                        Raw = json,
+                        Time = m.time,
+                        User = new() { Name = m.user }
+                    };
+                    ReceivedChatMessage?.Invoke(msg);
                 }
             }
             catch
