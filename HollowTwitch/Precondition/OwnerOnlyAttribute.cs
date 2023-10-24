@@ -8,7 +8,7 @@ namespace HollowTwitch.Precondition
     {
         public override bool Check(ICommandContext ctx)
         {
-            return string.Equals(ctx.Message.User.Name, TwitchMod.Instance.Config.TwitchChannel, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(ctx.Message.User.Name, TwitchMod.Instance.Config.Twitch.Channel, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

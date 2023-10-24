@@ -36,7 +36,7 @@ namespace HollowTwitch.Clients
     /// </summary>
     public class BiliBiliClient : IClient
     {
-        private readonly List<Message> _log = new();
+        private readonly List<Message> _log = [];
 
         public ClientType Type => ClientType.Bilibili;
         
@@ -56,9 +56,9 @@ namespace HollowTwitch.Clients
             { "visit_id", "" },
         };
 
-        public BiliBiliClient(GlobalConfig config)
+        public BiliBiliClient(GlobalConfig.BilibiliConfig config)
         {
-            data["roomid"] = config.BilibiliRoomID.ToString();
+            data["roomid"] = config.RoomID.ToString();
 
             RawPayload += ProcessJson;
         }

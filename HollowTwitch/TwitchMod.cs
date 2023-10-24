@@ -16,9 +16,12 @@ using UnityEngine;
 namespace HollowTwitch
 {
     [UsedImplicitly]
-    public class TwitchMod : Mod, ITogglableMod, IGlobalSettings<GlobalConfig>
+    public sealed class TwitchMod : Mod, ITogglableMod, IGlobalSettings<GlobalConfig>
 	{
-		public static TwitchMod Instance;
+        public static readonly string VERSION = "R." + typeof(TwitchMod).Assembly.GetName().Version.ToString(4);
+        public static readonly string NAME = "R." + typeof(TwitchMod).Assembly.GetName().Name;
+
+        public static TwitchMod Instance;
 
 		private Thread _currentThread;
 
@@ -32,11 +35,10 @@ namespace HollowTwitch
         public GlobalConfig OnSaveGlobal() =>
             Config;
 
-        public static readonly Version Version = new(2, 5, 0, 0);
         public override string GetVersion() =>
-            "R." + Version.ToString(4);
+            VERSION;
 
-        public TwitchMod() : base("HollowTwitch")
+        public TwitchMod() : base(NAME)
         {
             Instance = this;
         }
@@ -58,17 +60,11 @@ namespace HollowTwitch
             Processor = new CommandProcessor();
             Processor.Initialize();
 
-            if (Config.TwitchToken is null)
-            {
-                LogError("Token not found, relaunch the game with the fields in settings populated.");
-                return;
-            }
-
             Client = Config.Client switch 
             {
-                ClientType.Twitch => new TwitchClient(Config),
+                ClientType.Twitch => new TwitchClient(Config.Twitch),
                 
-                ClientType.Bilibili => new BiliBiliClient(Config),
+                ClientType.Bilibili => new BiliBiliClient(Config.Bilibili),
                 
                 ClientType.Local => new LocalClient(Config),
                 

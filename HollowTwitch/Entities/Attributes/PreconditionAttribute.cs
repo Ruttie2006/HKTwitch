@@ -3,7 +3,7 @@ using HollowTwitch.Entities.Contexts;
 
 namespace HollowTwitch.Entities.Attributes
 {
-    [AttributeUsage(AttributeTargets.All, Inherited = false, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.All, Inherited = true, AllowMultiple = true)]
     public abstract class PreconditionAttribute : Attribute
     {            
         public abstract bool Check(ICommandContext ctx);

@@ -10,12 +10,12 @@ namespace HollowTwitch.Clients
 {
     public class TwitchClient : IClient
     {
-        public static readonly string[] MessageSeperators = new string[1] { "\r\n" };
+        public static readonly string[] MessageSeparators = ["\r\n"];
         private TcpClient _client;
         public StreamReader Output;
 		public StreamWriter Input;
 
-        internal readonly GlobalConfig _config;
+        internal readonly GlobalConfig.TwitchConfig _config;
 
         public ClientType Type => ClientType.Twitch;
 
@@ -27,14 +27,14 @@ namespace HollowTwitch.Clients
 
         public event Action<string> ClientErrored;
 
-        public TwitchClient(GlobalConfig config)
+        public TwitchClient(GlobalConfig.TwitchConfig config)
         {
             _config = config;
             ConnectAndAuthenticate(config);
             RawPayload += ProcessMessage;
         }
 
-        private void ConnectAndAuthenticate(GlobalConfig config)
+        private void ConnectAndAuthenticate(GlobalConfig.TwitchConfig config)
         {
             _client = new TcpClient("irc.twitch.tv", 6667);
 
@@ -50,9 +50,9 @@ namespace HollowTwitch.Clients
                 return;
             }
                 
-            SendMessage($"PASS oauth:{config.TwitchToken}");
-            SendMessage($"NICK {config.TwitchUsername}");
-            SendMessage($"JOIN #{config.TwitchChannel}");
+            SendMessage($"PASS oauth:{config.Token}");
+            SendMessage($"NICK {config.Username}");
+            SendMessage($"JOIN #{config.Channel}");
         }
 
         private void Reconnect(int delay)
@@ -126,7 +126,7 @@ namespace HollowTwitch.Clients
 
                     string raw = Output.ReadLine();
 					// "When the Twitch IRC server sends a message, it may contain a single message or multiple messages"
-					var messages = raw.Split(MessageSeperators, StringSplitOptions.RemoveEmptyEntries);
+					var messages = raw.Split(MessageSeparators, StringSplitOptions.RemoveEmptyEntries);
 					// "[The Twitch IRC server] may also send a message multiple times if it doesn’t think the bot received it"
                     // I can't be bothered to deal with that, so I won't.
 

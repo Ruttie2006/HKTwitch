@@ -27,7 +27,7 @@ namespace HollowTwitch.Clients
 
         private readonly int Port;
         
-        public LocalClient(GlobalConfig config,int port = 1234)
+        public LocalClient(GlobalConfig config, int port = 26955)
         {
             Port = port;
             
@@ -62,9 +62,10 @@ namespace HollowTwitch.Clients
         
         private void ConnectCallback(IAsyncResult result)
         {
-            _client.EndConnect(result);
+            var client = (TcpClient)result.AsyncState;
+            client.EndConnect(result);
 
-            if (!_client.Connected)
+            if (!client.Connected)
             {
                 Logger.LogError("Connection failed.");
                 
@@ -73,14 +74,14 @@ namespace HollowTwitch.Clients
 
             Logger.Log("Connection Successful. Waiting for messages.");
 
-            stream = _client.GetStream();
+            stream = client.GetStream();
 
-            stream.BeginRead(receiveBuf, 0, 4096, RecvCallback, null);
+            stream.BeginRead(receiveBuf, 0, 4096, RecvCallback, stream);
         }
         
         private void RecvCallback(IAsyncResult result)
         {
-
+            var stream = (NetworkStream)result.AsyncState;
             int byte_len = stream.EndRead(result);
             
             if (byte_len <= 0)

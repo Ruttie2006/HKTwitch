@@ -25,8 +25,8 @@ namespace HollowTwitch
 
         public virtual void Reply(string message)
         {
-            if (Context is not TwitchCommandContext ctx)
-                throw new InvalidOperationException("You cannot reply to messages not received via the twitch client!");
+            if (Context is not IRespondableContext ctx)
+                throw new InvalidOperationException("You cannot reply to messages not received via a respondable client!");
             ctx.SendMessage(message);
         }
     }

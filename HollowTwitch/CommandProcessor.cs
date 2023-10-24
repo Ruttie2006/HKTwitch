@@ -21,21 +21,15 @@ using UObject = UnityEngine.Object;
 
 namespace HollowTwitch
 {
-    // Scuffed command proccersor thingy, needs a lot of work
+    // Scuffed command processor thingy, needs a lot of work
     public class CommandProcessor
     {
-        public const char Seperator = ' ';
+        public const char Separator = ' ';
 
-        public List<Command> Commands { get; init; }
-        public Dictionary<Type, IArgumentParser> ArgumentParsers { get; init; }
+        public List<Command> Commands { get; init; } = [];
+        public Dictionary<Type, IArgumentParser> ArgumentParsers { get; init; } = [];
         
         private MonoBehaviour _coroutineRunner;
-
-        public CommandProcessor()
-        {
-            Commands = new List<Command>();
-            ArgumentParsers = new Dictionary<Type, IArgumentParser>();
-        }
 
         internal void Initialize()
         {
@@ -54,7 +48,7 @@ namespace HollowTwitch
         public void Execute(IClient client, IMessage message, ReadOnlyCollection<string> blacklist, bool ignoreChecks = false)
         {
             var trimmedContent = message.Content.Substring(TwitchMod.Instance.Config.Prefix.Length);
-            string[] pieces = trimmedContent.Split(Seperator);
+            string[] pieces = trimmedContent.Split(Separator);
 			IEnumerable<string> args = pieces.Skip(1);
 
 			IOrderedEnumerable<Command> found = Commands
@@ -176,7 +170,7 @@ namespace HollowTwitch
                 {
                     if (hasRemainder)
                     {
-                        toParse = string.Join(Seperator.ToString(), enumerated.Skip(i).Take(enumerated.Length).ToArray());
+                        toParse = string.Join(Separator.ToString(), enumerated.Skip(i).Take(enumerated.Length).ToArray());
                     }
                 }
                 
@@ -220,7 +214,7 @@ namespace HollowTwitch
 #nullable enable
         public void RegisterCooldowns(ICooldownConfig config, IEnumerable<Command>? ownedCommands = null)
         {
-            config.Cooldowns ??= new();
+            config.Cooldowns ??= [];
             // No cooldowns configured, let's populate the dictionary.
             if (config.Cooldowns.Count == 0)
             {
@@ -274,9 +268,7 @@ namespace HollowTwitch
 
             foreach (MethodInfo method in methods)
             {
-                var attr = method.GetCustomAttributes(typeof(HKCommandAttribute), false).OfType<HKCommandAttribute>().FirstOrDefault();
-
-                if (attr == null)
+                if (method.GetCustomAttributes<HKCommandAttribute>(false).FirstOrDefault() is not { } attr)
                     continue;
 
                 var cmd = new Command(attr.Name, method, instance);

@@ -9,7 +9,7 @@ using HollowTwitch.Entities.Twitch;
 
 namespace HollowTwitch.Entities.Contexts
 {
-    public class TwitchCommandContext : BaseCommandContext
+    public class TwitchCommandContext : BaseCommandContext, IRespondableContext
     {
         public new TwitchClient Client { get; set; }
         public StreamWriter Input { get; set; }
